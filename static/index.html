@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Selector</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #eceff1;
+            font-family: system-ui, Arial, sans-serif;
+            color: #222;
+        }
+        .selector-container {
+            position: absolute;
+            top: 32px;
+            left: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        h1 {
+            font-weight: 600;
+            margin-bottom: 24px;
+            font-size: 1.35em;
+            letter-spacing: 0.01em;
+        }
+        #database-dropdown {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1.5px solid #1976d2;
+            font-size: 1em;
+            margin-bottom: 18px;
+            background: #fff;
+            color: #1976d2;
+            font-weight: 500;
+            outline: none;
+            transition: border 0.18s;
+        }
+        #database-dropdown:focus {
+            border: 1.5px solid #1565c0;
+        }
+        #open-db {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 22px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+            font-weight: 500;
+            box-shadow: 0 1px 4px 0 rgba(25,118,210,0.07);
+        }
+        #open-db:hover {
+            background: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="selector-container">
+        <h1>Select a Database</h1>
+        <select id="database-dropdown">
+            <option>Loading...</option>
+        </select>
+        <button id="open-db">Open</button>
+    </div>
+    <script>
+        async function fetchDatabases() {
+            const res = await fetch('/api/databases');
+            const data = await res.json();
+            const dropdown = document.getElementById('database-dropdown');
+            dropdown.innerHTML = '';
+            data.databases.forEach(db => {
+                const option = document.createElement('option');
+                option.value = db;
+                option.textContent = db;
+                dropdown.appendChild(option);
+            });
+        }
+        fetchDatabases();
+        document.getElementById('open-db').onclick = function() {
+            const db = document.getElementById('database-dropdown').value;
+            if (db) {
+                window.location.href = `/db/${encodeURIComponent(db)}`;
+            }
+        };
+    </script>
+</body>
+</html> 

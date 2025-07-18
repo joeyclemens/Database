@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room Schedule Table</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #eceff1;
+            font-family: system-ui, Arial, sans-serif;
+            color: #222;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 220px;
+            background: #fff;
+            color: #263238;
+            padding: 36px 0 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 1px solid #e3e7ed;
+            box-shadow: 2px 0 8px 0 rgba(60,72,88,0.03);
+        }
+        .sidebar h2 {
+            color: #1976d2;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .sidebar button {
+            width: 90%;
+            background: none;
+            border: none;
+            color: #1976d2;
+            padding: 15px 30px;
+            text-align: left;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background 0.18s, color 0.18s;
+            box-sizing: border-box;
+            display: block;
+        }
+        .sidebar button:hover {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .page-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding-left: 32px;
+            padding-right: 0;
+        }
+        @media (max-width: 700px) {
+            .page-wrap { padding-left: 8px; }
+            .sidebar { width: 100px; padding: 18px 0 0 0; }
+        }
+        #breadcrumb {
+            font-size: 0.85em;
+            color: #607d8b;
+            margin: 32px 0 18px 0;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        #breadcrumb a {
+            color: #1976d2;
+            text-decoration: none;
+            margin: 0 2px;
+        }
+        #breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        #breadcrumb span {
+            color: #90a4ae;
+        }
+        h2 {
+            font-weight: 600;
+            margin: 0 0 24px 0;
+            font-size: 1.35em;
+            letter-spacing: 0.01em;
+        }
+        #table-container {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px 0 rgba(60,72,88,0.07);
+            padding: 32px 18px 24px 18px;
+            margin-top: 8px;
+            max-width: 1100px;
+            max-height: 70vh;
+            overflow-x: auto;
+            overflow-y: auto;
+            position: relative;
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            background: transparent;
+            min-width: 800px;
+        }
+        th, td {
+            padding: 16px 14px;
+            border: none;
+            font-size: 1.04em;
+        }
+        th {
+            background: #f5f7fa;
+            font-weight: 700;
+            color: #263238;
+            border-bottom: 2px solid #e3e7ed;
+            letter-spacing: 0.04em;
+            position: sticky;
+            top: 48px;
+            z-index: 2;
+        }
+        td {
+            background: none;
+            border-bottom: 1px solid #f0f1f3;
+            transition: background 0.2s;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover td {
+            background: #f3f6fa;
+        }
+        td[contenteditable="true"] {
+            background: #f7fafc;
+            border-radius: 8px;
+            outline: none;
+            transition: background 0.2s;
+        }
+        td[contenteditable="true"]:focus {
+            background: #e3f2fd;
+        }
+        button, .button {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 22px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+            margin: 0 2px;
+            font-weight: 500;
+            box-shadow: 0 1px 4px 0 rgba(25,118,210,0.07);
+        }
+        button:hover, .button:hover {
+            background: #1565c0;
+        }
+        button:disabled, .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #add-row {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            display: block;
+            margin-bottom: 18px;
+            background: #fff;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+            box-shadow: none;
+        }
+        #add-row:hover {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        @media (max-width: 900px) {
+            #table-container { padding: 8px; }
+            th, td { padding: 9px 6px; font-size: 0.97em; }
+        }
+        button.delete-row {
+            background: #ffeaea;
+            color: #d32f2f;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 22px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+            margin: 0 2px;
+            font-weight: 500;
+            box-shadow: 0 1px 4px 0 rgba(211,47,47,0.07);
+        }
+        button.delete-row:hover {
+            background: #ffd6d6;
+            color: #b71c1c;
+        }
+        .sidebar button.db-select-btn {
+            background: #f5f7fa;
+            color: #1976d2;
+            font-weight: 700;
+            border: 1.5px solid #1976d2;
+            margin-bottom: 18px;
+        }
+        .sidebar button.db-select-btn:hover {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Control Space</h2>
+            <button id="pick-db" class="db-select-btn">Database Selection</button>
+            <button id="go-home">Home</button>
+            <button id="view-item-descriptions-search">Search Item Descriptions</button>
+            <button id="view-areaslevel1">View Areaslevel1 Table</button>
+            <button id="view-room-schedule-all">Room_Schedule Table</button>
+        </div>
+        <div class="page-wrap">
+            <nav id="breadcrumb"></nav>
+            <div class="main">
+                <h2>Room Schedule Table</h2>
+                <div id="table-container">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+console.log('room_schedule.html script loaded');
+        function getDbAndParent() {
+            const parts = window.location.pathname.split('/');
+            const db = decodeURIComponent(parts[2]);
+            let parent = parts[4] ? decodeURIComponent(parts[4]) : null;
+            // Try to restore parent from localStorage if missing
+            if (!parent) {
+                parent = localStorage.getItem('room_schedule_parent_' + db) || '';
+            }
+            return { db, parent };
+        }
+        function renderBreadcrumb() {
+            const { db } = getDbAndParent();
+            const homeUrl = `/db/${encodeURIComponent(db)}`;
+            const html = `<a href="${homeUrl}" id="breadcrumb-home">Home</a> &gt; <a href="#" id="breadcrumb-areaslevel1">Areaslevel1</a> &gt; <span>Room_Schedule</span>`;
+            document.getElementById('breadcrumb').innerHTML = html;
+            setTimeout(() => {
+                const btn = document.getElementById('breadcrumb-areaslevel1');
+                if (btn) {
+                    btn.onclick = function(e) {
+                        e.preventDefault();
+                        const { db, parent } = getDbAndParent();
+                        const lastFromRS = localStorage.getItem('areaslevel1_last_from_rs_' + db);
+                        const lastUsed = lastFromRS || localStorage.getItem('areaslevel1_parent_' + db) || parent;
+                        if (lastFromRS) localStorage.removeItem('areaslevel1_last_from_rs_' + db);
+                        window.location.href = `/db/${encodeURIComponent(db)}/areaslevel1/${encodeURIComponent(lastUsed)}`;
+                    };
+                }
+            }, 0);
+        }
+        renderBreadcrumb();
+        console.log('About to call fetchTable');
+        async function fetchTable() {
+            console.log('fetchTable running');
+            const { db, parent } = getDbAndParent();
+            const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/${encodeURIComponent(parent)}`);
+            if (!res.ok) {
+                document.getElementById('table-container').innerText = 'Failed to load table.';
+                return;
+            }
+            const data = await res.json();
+            let html = '<button id="add-row">Add Row</button>';
+            html += '<table><thead><tr>';
+            data.columns.forEach(col => html += `<th>${col}</th>`);
+            html += '<th>Action</th></tr></thead><tbody>';
+            data.rows.forEach(row => {
+                html += '<tr>';
+                row.forEach((cell, colIdx) => {
+                    const colName = data.columns[colIdx];
+                    if (colName === 'Area') {
+                        html += `<td data-col="${colName}" style="background:#eee;">${cell}</td>`;
+                    } else {
+                        html += `<td contenteditable="true" data-roomid="${row[data.columns.indexOf('Room_Id')]}" data-col="${colName}" onblur="window.saveRoomScheduleCell(this)">${cell}</td>`;
+                    }
+                });
+                const roomIdIdx = data.columns.indexOf('Room_Id');
+                const roomIdVal = roomIdIdx !== -1 ? row[roomIdIdx] : '';
+                const roomCodeIdx = data.columns.indexOf('Room_Code');
+                const roomCodeVal = roomCodeIdx !== -1 ? row[roomCodeIdx] : '';
+                html += `<td><button class='item-schedule-btn' data-roomcode='${roomCodeVal}'>Item_Schedule</button> <button class='delete-row' data-roomid='${roomIdVal}'>Delete</button></td>`;
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('table-container').innerHTML = html;
+
+            // Add row handler
+            document.getElementById('add-row').onclick = function() {
+                const table = document.querySelector('#table-container table tbody');
+                let newRow = '<tr>';
+                data.columns.forEach((col, idx) => {
+                    if (col === 'Area') {
+                        newRow += `<td data-col="${col}" style="background:#eee;"></td>`;
+                    } else {
+                        newRow += `<td contenteditable="true" data-col="${col}"></td>`;
+                    }
+                });
+                newRow += `<td><button class='save-new-row' disabled>Save</button></td></tr>`;
+                table.insertAdjacentHTML('afterbegin', newRow);
+                // Save handler
+                table.querySelector('.save-new-row').onclick = async function() {
+                    const tds = this.closest('tr').querySelectorAll('td');
+                    const rowData = {};
+                    tds.forEach(td => {
+                        const col = td.getAttribute('data-col');
+                        if (col && col !== 'Area') rowData[col] = td.textContent;
+                    });
+                    const { db } = getDbAndParent();
+                    const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/add`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(rowData)
+                    });
+                    if (!res.ok) {
+                        alert('Failed to add row: ' + await res.text());
+                    } else {
+                        fetchTable();
+                    }
+                };
+                // Enable save only if ParentArea is filled
+                const parentAreaTd = table.querySelector('td[data-col="ParentArea"]');
+                const saveBtn = table.querySelector('.save-new-row');
+                parentAreaTd.oninput = function() {
+                    saveBtn.disabled = parentAreaTd.textContent.trim() === '';
+                };
+                saveBtn.disabled = true;
+            };
+            // Delete row handler
+            document.querySelectorAll('.delete-row').forEach(btn => {
+                btn.onclick = async function() {
+                    if (!confirm('Delete this row?')) return;
+                    const roomId = this.getAttribute('data-roomid');
+                    const { db } = getDbAndParent();
+                    const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ room_id: roomId })
+                    });
+                    if (!res.ok) {
+                        alert('Failed to delete row: ' + await res.text());
+                    } else {
+                        fetchTable();
+                    }
+                };
+            });
+            // Attach Item_Schedule button handlers after rendering the table
+            console.log('Attaching item-schedule-btn handlers');
+            Array.from(document.querySelectorAll('.item-schedule-btn')).forEach(btn => {
+                btn.onclick = function() {
+                    const { db, parent } = getDbAndParent();
+                    const roomCode = this.getAttribute('data-roomcode');
+                    localStorage.setItem('last_filtered_room_schedule_url', window.location.pathname);
+                    console.log('Item_Schedule button clicked:', db, roomCode);
+                    window.location.href = `/db/${encodeURIComponent(db)}/item_schedule/${encodeURIComponent(roomCode)}`;
+                };
+            });
+        }
+        window.saveRoomScheduleCell = async function(td) {
+            const { db } = getDbAndParent();
+            const roomId = td.getAttribute('data-roomid');
+            const column = td.getAttribute('data-col');
+            const newValue = td.textContent;
+            if (!roomId || !column) return;
+            const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ room_id: roomId, column, value: newValue })
+            });
+            if (!res.ok) {
+                td.style.background = '#fbb';
+                setTimeout(() => td.style.background = '', 1000);
+                alert('Failed to save change: ' + await res.text());
+            } else {
+                td.style.background = '#bfb';
+                setTimeout(() => td.style.background = '', 500);
+            }
+        }
+        fetchTable();
+        console.log('fetchTable called');
+        document.getElementById('pick-db').onclick = function() { window.location.href = '/'; };
+        document.getElementById('go-home').onclick = function() {
+            const { db } = getDbAndParent();
+            window.location.href = `/db/${encodeURIComponent(db)}`;
+        };
+        document.getElementById('view-item-descriptions-search').onclick = function() {
+            const { db } = getDbAndParent();
+            window.location.href = `/db/${encodeURIComponent(db)}/item_descriptions_search`;
+        };
+        document.getElementById('view-areaslevel1').onclick = function() {
+            const { db, parent } = getDbAndParent();
+            // Try to restore last-used ArealevelID from localStorage
+            const lastFromRS = localStorage.getItem('areaslevel1_last_from_rs_' + db);
+            const lastUsed = lastFromRS || localStorage.getItem('areaslevel1_parent_' + db) || parent;
+            if (lastFromRS) localStorage.removeItem('areaslevel1_last_from_rs_' + db);
+            window.location.href = `/db/${encodeURIComponent(db)}/areaslevel1/${encodeURIComponent(lastUsed)}`;
+        };
+        document.getElementById('view-room-schedule-all').onclick = function() {
+            const { db } = getDbAndParent();
+            window.location.href = `/db/${encodeURIComponent(db)}/room_schedule_all`;
+        };
+    </script>
+</body>
+</html> 

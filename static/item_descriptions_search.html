@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Item Descriptions</title>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; background: #eceff1; font-family: system-ui, Arial, sans-serif; color: #222; }
+        .container { display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: #fff; color: #263238; padding: 36px 0 0 0; display: flex; flex-direction: column; align-items: center; border-right: 1px solid #e3e7ed; box-shadow: 2px 0 8px 0 rgba(60,72,88,0.03); }
+        .sidebar h2 { color: #1976d2; text-align: center; margin-bottom: 30px; font-size: 1.1em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .sidebar button { width: 90%; background: none; border: none; color: #1976d2; padding: 15px 30px; text-align: left; font-size: 1em; cursor: pointer; border-radius: 8px; margin-bottom: 8px; transition: background 0.18s, color 0.18s; box-sizing: border-box; display: block; }
+        .sidebar button.db-select-btn { background: #f5f7fa; color: #1976d2; font-weight: 700; border: 1.5px solid #1976d2; margin-bottom: 18px; }
+        .sidebar button.db-select-btn:hover { background: #e3f2fd; color: #1565c0; }
+        .sidebar button:hover { background: #e3f2fd; color: #1565c0; }
+        .page-wrap { flex: 1; display: flex; flex-direction: column; padding-left: 32px; padding-right: 0; }
+        @media (max-width: 700px) { .page-wrap { padding-left: 8px; } .sidebar { width: 100px; padding: 18px 0 0 0; } }
+        #breadcrumb { font-size: 0.85em; color: #607d8b; margin: 32px 0 18px 0; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; }
+        #breadcrumb a { color: #1976d2; text-decoration: none; margin: 0 2px; }
+        #breadcrumb a:hover { text-decoration: underline; }
+        #breadcrumb span { color: #90a4ae; }
+        h2 { font-weight: 600; margin: 0 0 24px 0; font-size: 1.35em; letter-spacing: 0.01em; }
+        #search-container { margin-bottom: 18px; display: flex; gap: 18px; }
+        #search-container input { width: 260px; padding: 8px 12px; font-size: 1em; border-radius: 6px; border: 1px solid #ccc; }
+        #table-container { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px 0 rgba(60,72,88,0.07); padding: 32px 18px 24px 18px; margin-top: 8px; max-width: 1200px; min-width: 700px; overflow-y: auto; max-height: 70vh; position: relative; }
+        th { position: sticky; top: 0; z-index: 2; background: #f5f7fa; }
+        table { border-collapse: separate; border-spacing: 0; width: 100%; background: transparent; }
+        th, td { padding: 16px 14px; border: none; font-size: 1.04em; }
+        th { font-weight: 700; color: #263238; border-bottom: 2px solid #e3e7ed; letter-spacing: 0.04em; }
+        td { background: none; border-bottom: 1px solid #f0f1f3; transition: background 0.2s; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f3f6fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Control Space</h2>
+            <button id="pick-db" class="db-select-btn">Database Selection</button>
+            <button id="go-home">Home</button>
+            <button id="view-room-schedule-all">Room_Schedule Table</button>
+        </div>
+        <div class="page-wrap">
+            <nav id="breadcrumb"></nav>
+            <div class="main">
+                <h2>Search Item Descriptions</h2>
+                <div id="search-container">
+                    <input type="text" id="search-adb-ref" placeholder="Search ADB_Ref...">
+                    <input type="text" id="search-description" placeholder="Search Item_Description...">
+                </div>
+                <div id="table-container">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function getDb() {
+            const parts = window.location.pathname.split('/');
+            return decodeURIComponent(parts[2]);
+        }
+        function renderBreadcrumb() {
+            const db = getDb();
+            const homeUrl = `/db/${encodeURIComponent(db)}`;
+            const html = `<a href="${homeUrl}" id="breadcrumb-home">Home</a> &gt; <span>Item Descriptions Search</span>`;
+            document.getElementById('breadcrumb').innerHTML = html;
+        }
+        renderBreadcrumb();
+        let allRows = [];
+        async function fetchTable() {
+            const db = getDb();
+            const res = await fetch(`/api/db/${encodeURIComponent(db)}/item_descriptions`);
+            if (!res.ok) {
+                document.getElementById('table-container').innerText = 'Failed to load table.';
+                return;
+            }
+            const data = await res.json();
+            allRows = data.rows;
+            renderTable(data.columns, data.rows);
+        }
+        function renderTable(columns, rows) {
+            let html = '<table><thead><tr>';
+            columns.forEach(col => html += `<th>${col}</th>`);
+            html += '</tr></thead><tbody>';
+            rows.forEach(row => {
+                html += '<tr>';
+                row.forEach((cell, colIdx) => {
+                    const colName = columns[colIdx];
+                    if (colName === 'ADB_Ref') {
+                        html += `<td data-adbref="${row[0]}" data-col="${colName}">${cell}</td>`;
+                    } else if (colName === 'Item_Description') {
+                        html += `<td contenteditable="true" data-adbref="${row[0]}" data-col="${colName}" onblur="window.saveItemDescriptionCell(this)">${cell}</td>`;
+                    } else if (colName === 'Unit_Cost') {
+                        // Format as GBP if not being edited
+                        const num = parseFloat(cell.replace(/£|,/g, ''));
+                        let display = cell;
+                        if (!isNaN(num)) {
+                            display = `£${num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        html += `<td contenteditable="true" data-adbref="${row[0]}" data-col="${colName}" onfocus="window.showRawUnitCost(this)" onblur="window.saveItemDescriptionCell(this)">${display}</td>`;
+                    } else if (colName === 'Cat' || colName === 'Group') {
+                        html += `<td contenteditable="true" data-adbref="${row[0]}" data-col="${colName}" onblur="window.saveErmCell(this)">${cell}</td>`;
+                    } else {
+                        html += `<td>${cell}</td>`;
+                    }
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('table-container').innerHTML = html;
+        }
+        window.showRawUnitCost = function(td) {
+            // Show raw value (strip £ and commas) when editing
+            const val = td.textContent.replace(/£|,/g, '');
+            td.textContent = val;
+        }
+        window.saveItemDescriptionCell = async function(td) {
+            const db = getDb();
+            const adbRef = td.getAttribute('data-adbref');
+            const column = td.getAttribute('data-col');
+            let newValue = td.textContent;
+            if (!adbRef || !column) return;
+            // For Unit_Cost, remove £ and commas before sending
+            if (column === 'Unit_Cost') {
+                newValue = newValue.replace(/£|,/g, '');
+            }
+            const res = await fetch(`/api/db/${encodeURIComponent(db)}/item_descriptions/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adb_ref: adbRef, column, value: newValue })
+            });
+            if (!res.ok) {
+                td.style.background = '#fbb';
+                setTimeout(() => td.style.background = '', 1000);
+                alert('Failed to save change: ' + await res.text());
+            } else {
+                td.style.background = '#bfb';
+                setTimeout(() => td.style.background = '', 500);
+                // Reformat as GBP after save
+                if (column === 'Unit_Cost') {
+                    const num = parseFloat(newValue);
+                    if (!isNaN(num)) {
+                        td.textContent = `£${num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    }
+                }
+            }
+        }
+        window.saveErmCell = async function(td) {
+            const db = getDb();
+            const adbRef = td.getAttribute('data-adbref');
+            const column = td.getAttribute('data-col');
+            const newValue = td.textContent;
+            if (!adbRef || !column) return;
+            const res = await fetch(`/api/db/${encodeURIComponent(db)}/item_descriptions/update_erm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adb_ref: adbRef, column, value: newValue })
+            });
+            if (!res.ok) {
+                td.style.background = '#fbb';
+                setTimeout(() => td.style.background = '', 1000);
+                alert('Failed to save change: ' + await res.text());
+            } else {
+                td.style.background = '#bfb';
+                setTimeout(() => td.style.background = '', 500);
+            }
+        }
+        function filterTable() {
+            const adbRefFilter = document.getElementById('search-adb-ref').value.toLowerCase();
+            const descFilter = document.getElementById('search-description').value.toLowerCase();
+            const filtered = allRows.filter(row => {
+                const adbRef = row[0] ? row[0].toLowerCase() : '';
+                const desc = row[1] ? row[1].toLowerCase() : '';
+                return adbRef.includes(adbRefFilter) && desc.includes(descFilter);
+            });
+            const db = getDb();
+            fetch(`/api/db/${encodeURIComponent(db)}/item_descriptions`).then(res => res.json()).then(data => {
+                renderTable(data.columns, filtered);
+            });
+        }
+        document.getElementById('search-adb-ref').addEventListener('input', filterTable);
+        document.getElementById('search-description').addEventListener('input', filterTable);
+        fetchTable();
+        document.getElementById('pick-db').onclick = function() { window.location.href = '/'; };
+        document.getElementById('go-home').onclick = function() {
+            const db = getDb();
+            window.location.href = `/db/${encodeURIComponent(db)}`;
+        };
+        document.getElementById('view-room-schedule-all').onclick = function() {
+            const db = getDb();
+            window.location.href = `/db/${encodeURIComponent(db)}/room_schedule_all`;
+        };
+    });
+    </script>
+</body>
+</html> 

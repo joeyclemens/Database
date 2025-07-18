@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Room_Schedule Table</title>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; background: #eceff1; font-family: system-ui, Arial, sans-serif; color: #222; }
+        .container { display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: #fff; color: #263238; padding: 36px 0 0 0; display: flex; flex-direction: column; align-items: center; border-right: 1px solid #e3e7ed; box-shadow: 2px 0 8px 0 rgba(60,72,88,0.03); }
+        .sidebar h2 { color: #1976d2; text-align: center; margin-bottom: 30px; font-size: 1.1em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .sidebar button { width: 90%; background: none; border: none; color: #1976d2; padding: 15px 30px; text-align: left; font-size: 1em; cursor: pointer; border-radius: 8px; margin-bottom: 8px; transition: background 0.18s, color 0.18s; box-sizing: border-box; display: block; }
+        .sidebar button.db-select-btn { background: #f5f7fa; color: #1976d2; font-weight: 700; border: 1.5px solid #1976d2; margin-bottom: 18px; }
+        .sidebar button.db-select-btn:hover { background: #e3f2fd; color: #1565c0; }
+        .sidebar button:hover { background: #e3f2fd; color: #1565c0; }
+        .page-wrap { flex: 1; display: flex; flex-direction: column; padding-left: 32px; padding-right: 0; }
+        @media (max-width: 700px) { .page-wrap { padding-left: 8px; } .sidebar { width: 100px; padding: 18px 0 0 0; } }
+        #breadcrumb { font-size: 0.85em; color: #607d8b; margin: 32px 0 18px 0; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; }
+        #breadcrumb a { color: #1976d2; text-decoration: none; margin: 0 2px; }
+        #breadcrumb a:hover { text-decoration: underline; }
+        #breadcrumb span { color: #90a4ae; }
+        h2 { font-weight: 600; margin: 0 0 24px 0; font-size: 1.35em; letter-spacing: 0.01em; }
+        #table-container { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px 0 rgba(60,72,88,0.07); padding: 32px 18px 24px 18px; margin-top: 8px; max-width: 1200px; min-width: 700px; overflow-y: auto; max-height: 70vh; position: relative; }
+        th { position: sticky; top: 0; z-index: 2; background: #f5f7fa; }
+        .sticky-add-row { position: sticky; top: 0; z-index: 3; background: #fff; padding-bottom: 8px; display: block; }
+        table { border-collapse: separate; border-spacing: 0; width: 100%; background: transparent; }
+        th, td { padding: 16px 14px; border: none; font-size: 1.04em; }
+        th { font-weight: 700; color: #263238; border-bottom: 2px solid #e3e7ed; letter-spacing: 0.04em; }
+        td { background: none; border-bottom: 1px solid #f0f1f3; transition: background 0.2s; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f3f6fa; }
+        td[contenteditable="true"] { background: #f7fafc; border-radius: 8px; outline: none; transition: background 0.2s; }
+        td[contenteditable="true"]:focus { background: #e3f2fd; }
+        button, .button { background: #1976d2; color: #fff; border: none; border-radius: 999px; padding: 8px 22px; font-size: 1em; cursor: pointer; transition: background 0.18s, color 0.18s, box-shadow 0.18s; margin: 0 2px; font-weight: 500; box-shadow: 0 1px 4px 0 rgba(25,118,210,0.07); }
+        button:hover, .button:hover { background: #1565c0; }
+        button:disabled, .button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #add-row.sticky-add-row { width: 100%; left: 0; }
+        #add-row { margin-bottom: 18px; background: #fff; color: #1976d2; border: 1px solid #1976d2; box-shadow: none; position: relative; z-index: 3; }
+        #add-row:hover { background: #e3f2fd; color: #1565c0; }
+        @media (max-width: 900px) { #table-container { padding: 8px; } th, td { padding: 9px 6px; font-size: 0.97em; } }
+        button.delete-row { background: #ffeaea; color: #d32f2f; border: none; border-radius: 999px; padding: 8px 22px; font-size: 1em; cursor: pointer; transition: background 0.18s, color 0.18s, box-shadow 0.18s; margin: 0 2px; font-weight: 500; box-shadow: 0 1px 4px 0 rgba(211,47,47,0.07); }
+        button.delete-row:hover { background: #ffd6d6; color: #b71c1c; }
+        .sidebar button.db-select-btn { background: #f5f7fa; color: #1976d2; font-weight: 700; border: 1.5px solid #1976d2; margin-bottom: 18px; }
+        .sidebar button.db-select-btn:hover { background: #e3f2fd; color: #1565c0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Control Space</h2>
+            <button id="pick-db" class="db-select-btn">Database Selection</button>
+            <button id="go-home">Home</button>
+            <button id="view-item-descriptions-search">Search Item Descriptions</button>
+            <button id="view-areaslevel3">View Areaslevel3 Table</button>
+        </div>
+        <div class="page-wrap">
+            <nav id="breadcrumb"></nav>
+            <div class="main">
+                <h2>Room_Schedule Table</h2>
+                <div id="table-search-container" style="margin-bottom:18px;">
+                    <input type="text" id="table-search" placeholder="Search table..." style="width: 320px; padding: 8px 12px; font-size: 1em; border-radius: 6px; border: 1px solid #ccc;">
+                </div>
+                <div id="table-container">Loading...</div>
+            </div>
+            <div id="areaslevel3-container"></div>
+        </div>
+    </div>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    function getDb() {
+        const parts = window.location.pathname.split('/');
+        return decodeURIComponent(parts[2]);
+    }
+    function renderBreadcrumb() {
+        const db = getDb();
+        const homeUrl = `/db/${encodeURIComponent(db)}`;
+        const html = `<a href="${homeUrl}" id="breadcrumb-home">Home</a> &gt; <span>Room_Schedule (All)</span>`;
+        document.getElementById('breadcrumb').innerHTML = html;
+    }
+    renderBreadcrumb();
+    async function fetchTable() {
+        const db = getDb();
+        const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule`);
+        if (!res.ok) {
+            document.getElementById('table-container').innerText = 'Failed to load table.';
+            return;
+        }
+        const data = await res.json();
+        let html = '<button id="add-row" class="sticky-add-row">Add Row</button>';
+        html += '<table><thead><tr>';
+        data.columns.forEach(col => html += `<th>${col}</th>`);
+        html += '<th>Action</th></tr></thead><tbody>';
+        data.rows.forEach(row => {
+            html += '<tr>';
+            row.forEach((cell, colIdx) => {
+                const colName = data.columns[colIdx];
+                html += `<td contenteditable="true" data-roomid="${row[data.columns.indexOf('Room_Id')]}" data-col="${colName}" onblur="window.saveRoomScheduleCell(this)">${cell}</td>`;
+            });
+            const roomIdIdx = data.columns.indexOf('Room_Id');
+            const roomIdVal = roomIdIdx !== -1 ? row[roomIdIdx] : '';
+            const roomCodeIdx = data.columns.indexOf('Room_Code');
+            const roomCodeVal = roomCodeIdx !== -1 ? row[roomCodeIdx] : '';
+            html += `<td><button class='item-schedule-btn' data-roomcode='${roomCodeVal}'>Item_Schedule</button> <button class='delete-row' data-roomid='${roomIdVal}'>Delete</button></td>`;
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('table-container').innerHTML = html;
+        // Attach Item_Schedule button handlers immediately after rendering the table
+        Array.from(document.querySelectorAll('.item-schedule-btn')).forEach(btn => {
+            btn.onclick = function() {
+                const db = getDb();
+                const roomCode = this.getAttribute('data-roomcode');
+                window.location.href = `/db/${encodeURIComponent(db)}/item_schedule/${encodeURIComponent(roomCode)}`;
+            };
+        });
+        // Add row handler
+        document.getElementById('add-row').onclick = function() {
+            const table = document.querySelector('#table-container table tbody');
+            let newRow = '<tr>';
+            data.columns.forEach((col, idx) => {
+                newRow += `<td contenteditable="true" data-col="${col}"></td>`;
+            });
+            newRow += `<td><button class='save-new-row' disabled>Save</button></td></tr>`;
+            table.insertAdjacentHTML('afterbegin', newRow);
+            // Save handler
+            table.querySelector('.save-new-row').onclick = async function() {
+                const tds = this.closest('tr').querySelectorAll('td');
+                const rowData = {};
+                tds.forEach(td => {
+                    const col = td.getAttribute('data-col');
+                    rowData[col] = td.textContent;
+                });
+                const db = getDb();
+                const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rowData)
+                });
+                if (!res.ok) {
+                    alert('Failed to add row: ' + await res.text());
+                } else {
+                    fetchTable();
+                }
+            };
+            // Enable save only if all fields are filled
+            const tds = table.querySelectorAll('td[contenteditable="true"]');
+            const saveBtn = table.querySelector('.save-new-row');
+            tds.forEach(td => {
+                td.oninput = function() {
+                    let allFilled = true;
+                    tds.forEach(cell => { if (cell.textContent.trim() === '') allFilled = false; });
+                    saveBtn.disabled = !allFilled;
+                };
+            });
+            saveBtn.disabled = true;
+        };
+        // Delete row handler
+        document.querySelectorAll('.delete-row').forEach(btn => {
+            btn.onclick = async function() {
+                if (!confirm('Delete this row?')) return;
+                const roomId = this.getAttribute('data-roomid');
+                const db = getDb();
+                const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId })
+                });
+                if (!res.ok) {
+                    alert('Failed to delete row: ' + await res.text());
+                } else {
+                    fetchTable();
+                }
+            };
+        });
+    }
+    window.saveRoomScheduleCell = async function(td) {
+        const db = getDb();
+        const roomId = td.getAttribute('data-roomid');
+        const column = td.getAttribute('data-col');
+        const newValue = td.textContent;
+        if (!roomId || !column) return;
+        const res = await fetch(`/api/db/${encodeURIComponent(db)}/room_schedule/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ room_id: roomId, column, value: newValue })
+        });
+        if (!res.ok) {
+            td.style.background = '#fbb';
+            setTimeout(() => td.style.background = '', 1000);
+            alert('Failed to save change: ' + await res.text());
+        } else {
+            td.style.background = '#bfb';
+            setTimeout(() => td.style.background = '', 500);
+        }
+    }
+    fetchTable();
+    document.getElementById('pick-db').onclick = function() { window.location.href = '/'; };
+    document.getElementById('go-home').onclick = function() {
+        const db = getDb();
+        window.location.href = `/db/${encodeURIComponent(db)}`;
+    };
+    document.getElementById('view-item-descriptions-search').onclick = function() {
+        const db = getDb();
+        window.location.href = `/db/${encodeURIComponent(db)}/item_descriptions_search`;
+    };
+    document.getElementById('view-areaslevel3').onclick = function() {
+        const db = getDb();
+        window.location.href = `/db/${encodeURIComponent(db)}?show=areaslevel3`;
+    };
+    async function loadAreaslevel3Table(db) {
+        const res = await fetch(`/api/db/${encodeURIComponent(db)}/areaslevel3`);
+        if (!res.ok) {
+            document.getElementById('areaslevel3-container').innerHTML = '<p>Failed to load Areaslevel3 table.</p>';
+            return;
+        }
+        const data = await res.json();
+        renderAreaslevel3Table(data, db);
+    }
+    function renderAreaslevel3Table(data, db) {
+        let html = '<h2>Areaslevel3 Table</h2>';
+        html += '<button id="add-al3-row">Add Row</button>';
+        html += '<table><thead><tr>';
+        data.columns.forEach(col => html += `<th>${col}</th>`);
+        html += '<th>Action</th></tr></thead><tbody>';
+        data.rows.forEach(row => {
+            html += '<tr>';
+            row.forEach((cell, colIdx) => {
+                const colName = data.columns[colIdx];
+                html += `<td contenteditable="true" data-parentarea="${row[0]}" data-col="${colName}" onblur="window.saveAL3Cell(this, '${db}')">${cell}</td>`;
+            });
+            const parentAreaVal = row[0];
+            html += `<td><button class='delete-al3-row' data-parentarea='${parentAreaVal}'>Delete</button></td>`;
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('areaslevel3-container').innerHTML = html;
+
+        // Add row handler
+        document.getElementById('add-al3-row').onclick = function() {
+            const table = document.querySelector('#areaslevel3-container table tbody');
+            let newRow = '<tr>';
+            data.columns.forEach((col, idx) => {
+                newRow += `<td contenteditable="true" data-col="${col}"></td>`;
+            });
+            newRow += `<td><button class='save-new-al3-row' disabled>Save</button></td></tr>`;
+            table.insertAdjacentHTML('afterbegin', newRow);
+            // Save handler
+            table.querySelector('.save-new-al3-row').onclick = async function() {
+                const tds = this.closest('tr').querySelectorAll('td');
+                const rowData = {};
+                tds.forEach(td => {
+                    const col = td.getAttribute('data-col');
+                    rowData[col] = td.textContent;
+                });
+                const res = await fetch(`/api/db/${encodeURIComponent(db)}/areaslevel3/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rowData)
+                });
+                if (!res.ok) {
+                    alert('Failed to add row: ' + await res.text());
+                } else {
+                    loadAreaslevel3Table(db);
+                }
+            };
+            // Enable save only if all fields are filled
+            const tds = table.querySelectorAll('td[contenteditable="true"]');
+            const saveBtn = table.querySelector('.save-new-al3-row');
+            tds.forEach(td => {
+                td.oninput = function() {
+                    let allFilled = true;
+                    tds.forEach(cell => { if (cell.textContent.trim() === '') allFilled = false; });
+                    saveBtn.disabled = !allFilled;
+                };
+            });
+            saveBtn.disabled = true;
+        };
+        // Delete row handler
+        document.querySelectorAll('.delete-al3-row').forEach(btn => {
+            btn.onclick = async function() {
+                if (!confirm('Delete this row?')) return;
+                const parentArea = this.getAttribute('data-parentarea');
+                const res = await fetch(`/api/db/${encodeURIComponent(db)}/areaslevel3/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parent_area: parentArea })
+                });
+                if (!res.ok) {
+                    alert('Failed to delete row: ' + await res.text());
+                } else {
+                    loadAreaslevel3Table(db);
+                }
+            };
+        });
+    }
+    window.saveAL3Cell = async function(td, db) {
+        const parentArea = td.getAttribute('data-parentarea');
+        const column = td.getAttribute('data-col');
+        const newValue = td.textContent;
+        if (!parentArea || !column) return;
+        const res = await fetch(`/api/db/${encodeURIComponent(db)}/areaslevel3/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parent_area: parentArea, column, value: newValue })
+        });
+        if (!res.ok) {
+            td.style.background = '#fbb';
+            setTimeout(() => td.style.background = '', 1000);
+            alert('Failed to save change: ' + await res.text());
+        } else {
+            td.style.background = '#bfb';
+            setTimeout(() => td.style.background = '', 500);
+        }
+    }
+    // Add search filtering logic after rendering the table
+    const searchInput = document.getElementById('table-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#table-container table tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    }
+});
+</script>
+</body>
+</html> 
